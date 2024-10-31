@@ -6,8 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
-
-	"golang.org/x/net/context"
+	"context"
 )
 
 const (

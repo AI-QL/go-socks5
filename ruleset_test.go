@@ -2,8 +2,7 @@ package socks5
 
 import (
 	"testing"
-
-	"golang.org/x/net/context"
+	"context"
 )
 
 func TestPermitCommand(t *testing.T) {

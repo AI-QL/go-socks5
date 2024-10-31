@@ -6,8 +6,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
-
-	"golang.org/x/net/context"
+	"context"
 )
 
 const (
