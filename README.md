@@ -39,6 +39,26 @@ if err := server.ListenAndServe("tcp", "127.0.0.1:8000"); err != nil {
 }
 ```
 
+## Godoc
+
+### Step 1: Install `godoc`
+First, ensure that you have `godoc` installed. You can install it using the following command:
+
+```bash
+go install golang.org/x/tools/cmd/godoc@latest
+```
+
+### Step 2: Run `godoc` Server
+Next, run the `godoc` server to serve the documentation for your Go project:
+
+```bash
+godoc -http=:6060 -goroot=.
+```
+
+This command starts a web server on port 6060, serving the documentation for your Go project.
+
+
+
 ## Reference
 
 This repository was originally cloned from [go-socks5](https://github.com/armon/go-socks5) due to its long period of inactivity. It is a small yet elegant repo, and we aim to use it as a pilot project to transform it into a comprehensive library with thorough documentation and automation. We will also strive to optimize and enhance it using AI.
