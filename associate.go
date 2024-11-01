@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"strconv"
 	"time"
@@ -87,7 +86,7 @@ func doAssociate(ctx context.Context, s *Server, conn conn, req *Request) error 
 	}
 	go func() {
 		// Keep the SOCKS5 connection request
-		io.Copy(ioutil.Discard, conn.(*net.TCPConn))
+		io.Copy(io.Discard, conn.(*net.TCPConn))
 	}()
 
 	// Send success response

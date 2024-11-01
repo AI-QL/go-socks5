@@ -7,7 +7,6 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"context"
 	"sync"
 	"testing"
 	"time"
@@ -23,17 +22,19 @@ func TestSOCKS5_Associate(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	defer l.Close()
+
+	errCh := make(chan error, 1)
+
 	go func() {
-		defer l.Close()
 		var buf [1024]byte
 		for {
 			n, from, err := l.ReadFromUDP(buf[:])
 			if err != nil {
-				t.Fatalf("err: %v", err)
+				errCh <- fmt.Errorf("err: %v", err)
 				break
 			}
 			if i := bytes.Index(buf[:n], []byte("ping")); i == -1 {
-				t.Fatalf("bad: %v", buf)
+				errCh <- fmt.Errorf("bad: %v", buf)
 			} else {
 				idx, _ := strconv.Atoi(string(buf[4:n]))
 				msg := fmt.Sprintf("pong%v", idx)
@@ -58,11 +59,10 @@ func TestSOCKS5_Associate(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 
-	// Start listening on TCP port 12366
-	_, cancel := context.WithCancel(context.Background())
+	// Start listening
 	go func() {
 		if err := serv.ListenAndServe("tcp", "127.0.0.1:12366"); err != nil {
-			t.Errorf("Error starting SOCKS5 server: %v", err)
+			errCh <- fmt.Errorf("err: %v", err)
 		}
 	}()
 	time.Sleep(10 * time.Millisecond)
@@ -77,12 +77,12 @@ func TestSOCKS5_Associate(t *testing.T) {
 
 			s5, err := ssock.NewClient("127.0.0.1:12366", "foo", "bar", 0, 0)
 			if err != nil {
-				t.Fatalf("NewClient err: %v", err)
+				errCh <- fmt.Errorf("NewClient err: %v", err)
 				return
 			}
-			conn, err := s5.Dial("udp", "local.cloudpc.cn:8888")
+			conn, err := s5.Dial("udp", "127.0.0.1:8888")
 			if err != nil {
-				t.Fatalf("NewClient err: %v", err)
+				errCh <- fmt.Errorf("NewClient err: %v", err)
 				return
 			}
 			defer conn.Close()
@@ -91,15 +91,21 @@ func TestSOCKS5_Associate(t *testing.T) {
 			msg := fmt.Sprintf("ping%v", i)
 			_, err = conn.Write([]byte(msg))
 			if err != nil {
-				t.Fatalf("conn.Write err: %v", err)
+				errCh <- fmt.Errorf("conn.Write err: %v", err)
 				return
 			}
-			l, err := conn.Read(buf[:])
+			l, _ := conn.Read(buf[:])
 			fmt.Printf("### response len %v: %v ###\n", l, string(buf[:l]))
 		}(n)
 	}
+
 	wg.Wait()
 
-	// Signal the server to stop listening and ensure the test completes
-	cancel()
+	// Check for any errors from the goroutines
+	select {
+	case err := <-errCh:
+		t.Fatalf("Error in goroutine: %v", err)
+	default:
+		// No errors, continue
+	}
 }
