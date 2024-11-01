@@ -3,6 +3,7 @@ package socks5
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -29,20 +30,29 @@ func TestRequest_Connect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
+	defer l.Close()
+
+	// Create a channel to communicate errors back to the main goroutine
+	errCh := make(chan error, 1)
+
+	// Start the listener in a goroutine
 	go func() {
 		conn, err := l.Accept()
 		if err != nil {
-			t.Fatalf("err: %v", err)
+			errCh <- err
+			return
 		}
 		defer conn.Close()
 
 		buf := make([]byte, 4)
 		if _, err := io.ReadAtLeast(conn, buf, 4); err != nil {
-			t.Fatalf("err: %v", err)
+			errCh <- err
+			return
 		}
 
 		if !bytes.Equal(buf, []byte("ping")) {
-			t.Fatalf("bad: %v", buf)
+			errCh <- fmt.Errorf("bad: %v", buf)
+			return
 		}
 		conn.Write([]byte("pong"))
 	}()
@@ -96,6 +106,16 @@ func TestRequest_Connect(t *testing.T) {
 	if !bytes.Equal(out, expected) {
 		t.Fatalf("bad: %v %v", out, expected)
 	}
+
+	// Check for any errors from the listener goroutine
+	select {
+	case err := <-errCh:
+		if err != nil {
+			t.Fatalf("listener error: %v", err)
+		}
+	default:
+		// No error from the listener goroutine
+	}
 }
 
 func TestRequest_Connect_RuleFail(t *testing.T) {
@@ -104,23 +124,33 @@ func TestRequest_Connect_RuleFail(t *testing.T) {
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
+	defer l.Close()
+
+	// Create a channel to communicate errors back to the main goroutine
+	errCh := make(chan error, 1)
+
+	// Start the listener in a goroutine
 	go func() {
 		conn, err := l.Accept()
 		if err != nil {
-			t.Fatalf("err: %v", err)
+			errCh <- err
+			return
 		}
 		defer conn.Close()
 
 		buf := make([]byte, 4)
 		if _, err := io.ReadAtLeast(conn, buf, 4); err != nil {
-			t.Fatalf("err: %v", err)
+			errCh <- err
+			return
 		}
 
 		if !bytes.Equal(buf, []byte("ping")) {
-			t.Fatalf("bad: %v", buf)
+			errCh <- fmt.Errorf("bad: %v", buf)
+			return
 		}
 		conn.Write([]byte("pong"))
 	}()
+
 	lAddr := l.Addr().(*net.TCPAddr)
 
 	// Make server
@@ -165,5 +195,15 @@ func TestRequest_Connect_RuleFail(t *testing.T) {
 
 	if !bytes.Equal(out, expected) {
 		t.Fatalf("bad: %v %v", out, expected)
+	}
+
+	// Check for any errors from the listener goroutine
+	select {
+	case err := <-errCh:
+		if err != nil {
+			t.Fatalf("listener error: %v", err)
+		}
+	default:
+		// No error from the listener goroutine
 	}
 }

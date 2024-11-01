@@ -3,6 +3,7 @@ package socks5
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -17,20 +18,28 @@ func TestSOCKS5_Connect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
+	defer l.Close()
+
+	// Create a channel to communicate errors back to the main goroutine
+	errCh := make(chan error, 1)
+
 	go func() {
 		conn, err := l.Accept()
 		if err != nil {
-			t.Fatalf("err: %v", err)
+			errCh <- err
+			return
 		}
 		defer conn.Close()
 
 		buf := make([]byte, 4)
 		if _, err := io.ReadAtLeast(conn, buf, 4); err != nil {
-			t.Fatalf("err: %v", err)
+			errCh <- err
+			return
 		}
 
 		if !bytes.Equal(buf, []byte("ping")) {
-			t.Fatalf("bad: %v", buf)
+			errCh <- fmt.Errorf("bad: %v", buf)
+			return
 		}
 		conn.Write([]byte("pong"))
 	}()
@@ -53,7 +62,7 @@ func TestSOCKS5_Connect(t *testing.T) {
 	// Start listening
 	go func() {
 		if err := serv.ListenAndServe("tcp", "127.0.0.1:12365"); err != nil {
-			t.Fatalf("err: %v", err)
+			errCh <- err
 		}
 	}()
 	time.Sleep(10 * time.Millisecond)
@@ -106,5 +115,15 @@ func TestSOCKS5_Connect(t *testing.T) {
 
 	if !bytes.Equal(out, expected) {
 		t.Fatalf("bad: %v", out)
+	}
+
+	// Check for any errors from the goroutines
+	select {
+	case err := <-errCh:
+		if err != nil {
+			t.Fatalf("error from goroutine: %v", err)
+		}
+	default:
+		// No error from the goroutines
 	}
 }

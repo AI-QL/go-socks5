@@ -62,7 +62,7 @@ go install golang.org/x/tools/cmd/godoc@latest
 Next, run the `godoc` server to serve the documentation for your Go project:
 
 ```bash
-godoc -http=:6060 -goroot=.
+godoc -http=:6060 -index
 ```
 
 This command starts a web server on port 6060, serving the documentation for your Go project.

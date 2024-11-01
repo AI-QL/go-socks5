@@ -69,17 +69,19 @@ type Server struct {
 // New creates a new Server instance and potentially returns an error if the configuration is invalid.
 //
 // It ensures that the following defaults are set if not explicitly provided in the configuration:
-// - At least one authentication method is enabled. If no methods are specified, it defaults to using a
-//   UserPassAuthenticator if credentials are provided, or a NoAuthAuthenticator if no credentials are provided.
-// - A DNS resolver is set. If not provided, it defaults to a DNSResolver.
-// - A rule set is set. If not provided, it defaults to PermitAll.
-// - A log target is set. If not provided, it defaults to logging to standard output with standard log flags.
+//   - At least one authentication method is enabled. If no methods are specified, it defaults to using a
+//     UserPassAuthenticator if credentials are provided, or a NoAuthAuthenticator if no credentials are provided.
+//   - A DNS resolver is set. If not provided, it defaults to a DNSResolver.
+//   - A rule set is set. If not provided, it defaults to PermitAll.
+//   - A log target is set. If not provided, it defaults to logging to standard output with standard log flags.
 //
 // Parameters:
-//   conf - The configuration for the server.
+//
+//	conf - The configuration for the server.
 //
 // Returns:
-//   A new Server instance and any error that might have occurred.
+//
+//	A new Server instance and any error that might have occurred.
 func New(conf *Config) (*Server, error) {
 	// Ensure we have at least one authentication method enabled
 	if len(conf.AuthMethods) == 0 {
@@ -129,18 +131,18 @@ func New(conf *Config) (*Server, error) {
 // SetIPAllowlist sets the function to check if a given IP is allowed.
 // It takes a list of allowed IPs and updates the server's IP allowlist function accordingly.
 func (s *Server) SetIPAllowlist(allowedIPs []net.IP) {
-    // Update the IP allowlist function to check if the given IP is in the list of allowed IPs.
-    s.isIPAllowed = func(ip net.IP) bool {
-        // Iterate through the list of allowed IPs.
-        for _, allowedIP := range allowedIPs {
-            if ip.Equal(allowedIP) {
-                // Return true if the given IP matches any allowed IP.
-                return true
-            }
-        }
-        // Return false if the given IP is not in the list of allowed IPs.
-        return false
-    }
+	// Update the IP allowlist function to check if the given IP is in the list of allowed IPs.
+	s.isIPAllowed = func(ip net.IP) bool {
+		// Iterate through the list of allowed IPs.
+		for _, allowedIP := range allowedIPs {
+			if ip.Equal(allowedIP) {
+				// Return true if the given IP matches any allowed IP.
+				return true
+			}
+		}
+		// Return false if the given IP is not in the list of allowed IPs.
+		return false
+	}
 }
 
 // ListenAndServe creates a listener on the specified network address and starts serving connections.
@@ -170,19 +172,18 @@ func (s *Server) Serve(l net.Listener) error {
 		}
 		go s.ServeConn(conn)
 	}
-	return nil
 }
 
 // ServeConn handles a single connection.
 // It reads from the connection, processes the SOCKS5 protocol, and handles the request.
 //
 // ServeConn performs the following steps:
-// - Check the IP allowlist
-// - Reads the version byte from the connection.
-// - Checks if the version is compatible with SOCKS5.
-// - Authenticates the connection based on the server's configuration.
-// - Reads the client's request.
-// - Processes the client's request and sends the appropriate response.
+//   - Check the IP allowlist.
+//   - Reads the version byte from the connection.
+//   - Checks if the version is compatible with SOCKS5.
+//   - Authenticates the connection based on the server's configuration.
+//   - Reads the client's request.
+//   - Processes the client's request and sends the appropriate response.
 //
 // ServeConn returns an error if any step fails.
 func (s *Server) ServeConn(conn net.Conn) error {
@@ -212,7 +213,7 @@ func (s *Server) ServeConn(conn net.Conn) error {
 
 	// Ensure we are compatible with SOCKS5
 	if version[0] != socks5Version {
-		err := fmt.Errorf("Unsupported SOCKS version: %v", version)
+		err := fmt.Errorf("unsupported SOCKS version: %v", version)
 		s.config.Logger.Printf("[ERR] socks: %v", err)
 		return err
 	}
@@ -220,7 +221,7 @@ func (s *Server) ServeConn(conn net.Conn) error {
 	// Authenticate the connection
 	authContext, err := s.authenticate(conn, bufConn)
 	if err != nil {
-		err = fmt.Errorf("Failed to authenticate: %v", err)
+		err = fmt.Errorf("failed to authenticate: %v", err)
 		s.config.Logger.Printf("[ERR] socks: %v", err)
 		return err
 	}
@@ -228,12 +229,12 @@ func (s *Server) ServeConn(conn net.Conn) error {
 	// Read the client's request
 	request, err := NewRequest(bufConn)
 	if err != nil {
-		if err == unrecognizedAddrType {
+		if err == errUnrecognizedAddrType {
 			if err := sendReply(conn, addrTypeNotSupported, nil); err != nil {
-				return fmt.Errorf("Failed to send reply: %v", err)
+				return fmt.Errorf("failed to send reply: %v", err)
 			}
 		}
-		return fmt.Errorf("Failed to read destination address: %v", err)
+		return fmt.Errorf("failed to read destination address: %v", err)
 	}
 	request.AuthContext = authContext
 	if client, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
@@ -242,7 +243,7 @@ func (s *Server) ServeConn(conn net.Conn) error {
 
 	// Process the client request
 	if err := s.handleRequest(request, conn); err != nil {
-		err = fmt.Errorf("Failed to handle request: %v", err)
+		err = fmt.Errorf("failed to handle request: %v", err)
 		s.config.Logger.Printf("[ERR] socks: %v", err)
 		return err
 	}

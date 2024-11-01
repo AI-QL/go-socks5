@@ -27,10 +27,10 @@ const (
 
 var (
 	// UserAuthFailed is an error returned when user authentication fails.
-	UserAuthFailed = fmt.Errorf("User authentication failed")
+	errUserAuthFailed = fmt.Errorf("user authentication failed")
 
 	// NoSupportedAuth is an error returned when no supported authentication mechanisms are available.
-	NoSupportedAuth = fmt.Errorf("No supported authentication mechanism")
+	errNoSupportedAuth = fmt.Errorf("no supported authentication mechanism")
 )
 
 // AuthContext encapsulates authentication state provided during negotiation.
@@ -97,7 +97,7 @@ func (a UserPassAuthenticator) Authenticate(reader io.Reader, writer io.Writer) 
 
 	// Ensure we are compatible
 	if header[0] != userAuthVersion {
-		return nil, fmt.Errorf("Unsupported auth version: %v", header[0])
+		return nil, fmt.Errorf("unsupported auth version: %v", header[0])
 	}
 
 	// Get the user name
@@ -128,7 +128,7 @@ func (a UserPassAuthenticator) Authenticate(reader io.Reader, writer io.Writer) 
 		if _, err := writer.Write([]byte{userAuthVersion, authFailure}); err != nil {
 			return nil, err
 		}
-		return nil, UserAuthFailed
+		return nil, errUserAuthFailed
 	}
 
 	// Done
@@ -141,7 +141,7 @@ func (s *Server) authenticate(conn io.Writer, bufConn io.Reader) (*AuthContext, 
 	// Get the methods
 	methods, err := readMethods(bufConn)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get auth methods: %v", err)
+		return nil, fmt.Errorf("failed to get auth methods: %v", err)
 	}
 
 	// Select a usable method
@@ -158,7 +158,7 @@ func (s *Server) authenticate(conn io.Writer, bufConn io.Reader) (*AuthContext, 
 // noAcceptableAuth handles the case when no eligible authentication mechanism is available.
 func noAcceptableAuth(conn io.Writer) error {
 	conn.Write([]byte{socks5Version, noAcceptable})
-	return NoSupportedAuth
+	return errNoSupportedAuth
 }
 
 // readMethods reads the number of methods and the authentication methods supported by the client.
