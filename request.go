@@ -212,44 +212,48 @@ func (s *Server) handleConnect(ctx context.Context, conn conn, req *Request) err
 	return nil
 }
 
-// handleBind is used to handle a connect command
+// handleBind processes a bind request from a client.
+// It checks the request against the server's rules, logs the request, and delegates the actual binding to the doBind function.
 func (s *Server) handleBind(ctx context.Context, conn conn, req *Request) error {
-	// Check if this is allowed
-	if ctx_, ok := s.config.Rules.Allow(ctx, req); !ok {
-		if err := sendReply(conn, ruleFailure, nil); err != nil {
-			return fmt.Errorf("failed to send reply: %v", err)
-		}
-		return fmt.Errorf("bind to %v blocked by rules", req.DestAddr)
-	} else {
-		ctx = ctx_
-		s.config.Logger.Printf("Handling associate request with context: %v", ctx)
-	}
+    // Check if the bind request is allowed according to the server's rules.
+    // If the request is not allowed, send a failure reply and return an error.
+    if ctx_, ok := s.config.Rules.Allow(ctx, req); !ok {
+        if err := sendReply(conn, ruleFailure, nil); err != nil {
+            return fmt.Errorf("failed to send reply: %v", err)
+        }
+        return fmt.Errorf("bind to %v blocked by rules", req.DestAddr)
+    } else {
+        // If the rules allow the request and provide a new context, update the context.
+        ctx = ctx_
+    }
 
-	// TODO: Support bind
-	if err := sendReply(conn, commandNotSupported, nil); err != nil {
-		return fmt.Errorf("failed to send reply: %v", err)
-	}
-	return nil
+    // Log the receipt of the bind command with the destination address.
+    s.config.Logger.Printf("Received bind command for destination address: %v", req.DestAddr)
+
+    // Delegate the actual bind operation to the doBind function.
+    return doBind(ctx, s, conn, req)
 }
 
-// handleAssociate is used to handle a connect command
+// handleAssociate processes a SOCKS5 associate command.
+// It checks if the association is allowed based on the server's rules and then proceeds to establish the association.
 func (s *Server) handleAssociate(ctx context.Context, conn conn, req *Request) error {
-	// Check if this is allowed
-	if ctx_, ok := s.config.Rules.Allow(ctx, req); !ok {
-		if err := sendReply(conn, ruleFailure, nil); err != nil {
-			return fmt.Errorf("failed to send reply: %v", err)
-		}
-		return fmt.Errorf("associate to %v blocked by rules", req.DestAddr)
-	} else {
-		ctx = ctx_
-		s.config.Logger.Printf("Handling associate request with context: %v", ctx)
-	}
+    // Check if the association is allowed based on the server's rules.
+    if ctx_, ok := s.config.Rules.Allow(ctx, req); !ok {
+        // If not allowed, send a rule failure reply to the client.
+        if err := sendReply(conn, ruleFailure, nil); err != nil {
+            return fmt.Errorf("failed to send reply: %v", err)
+        }
+        return fmt.Errorf("association to %v blocked by rules", req.DestAddr)
+    } else {
+        // If allowed, update the context with the new context provided by the rules.
+        ctx = ctx_
+    }
 
-	// TODO: Support associate
-	if err := sendReply(conn, commandNotSupported, nil); err != nil {
-		return fmt.Errorf("failed to send reply: %v", err)
-	}
-	return nil
+    // Log the received associate command for auditing and debugging purposes.
+    s.config.Logger.Printf("Received associate command for destination address: %v", req.DestAddr)
+
+    // Delegate the actual association handling to the doAssociate function.
+    return doAssociate(ctx, s, conn, req)
 }
 
 // readAddrSpec is used to read AddrSpec.
