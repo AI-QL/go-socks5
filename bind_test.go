@@ -10,8 +10,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	ssock2 "github.com/wzshiming/socks5"
 )
 
 // TestSocks5_Bind tests the SOCKS5 bind functionality.
@@ -56,7 +54,7 @@ func TestSocks5_Bind(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	// Create a SOCKS5 dialer to connect to the server
-	dial, err := ssock2.NewDialer("socks5://127.0.0.1:12367")
+	dial, err := NewDialer("socks5://127.0.0.1:12367")
 	if err != nil {
 		t.Fatalf("Failed to create SOCKS5 dialer: %v", err)
 		return

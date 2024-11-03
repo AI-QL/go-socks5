@@ -10,8 +10,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	ssock "github.com/txthinking/socks5"
 )
 
 func TestSOCKS5_Associate(t *testing.T) {
@@ -75,7 +73,7 @@ func TestSOCKS5_Associate(t *testing.T) {
 		go func(i int) {
 			defer wg.Done()
 
-			s5, err := ssock.NewClient("127.0.0.1:12366", "foo", "bar", 0, 0)
+			s5, err := NewClient("127.0.0.1:12366", "foo", "bar", 0, 0)
 			if err != nil {
 				errCh <- fmt.Errorf("NewClient err: %v", err)
 				return
