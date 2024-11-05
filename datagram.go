@@ -68,14 +68,8 @@ func (d *Datagram) Address() string {
 	return net.JoinHostPort(s, p)
 }
 
-/*
-SOCKS5 UDP Datagram Format:
-+-----+------+------+----------+----------+----------+
-| RSV | FRAG | ATYP | DST.ADDR | DST.PORT |   DATA   |
-+-----+------+------+----------+----------+----------+
-|  2  |  1   |  1   | Variable |    2     | Variable |
-+-----+------+------+----------+----------+----------+
-*/
+// SOCKS5 UDP Datagram Format:
+// https://datatracker.ietf.org/doc/html/rfc1928#section-7
 func NewDatagramFromByte(ctx context.Context, memCreater MemAllocation, bs []byte) (*Datagram, error) {
 	// Minimum length required to parse the header fields
 	needLen := 4
@@ -166,14 +160,8 @@ func NewDatagramFromByte(ctx context.Context, memCreater MemAllocation, bs []byt
 	return datagram, nil
 }
 
-/*
-SOCKS5 UDP Datagram Format:
-+-----+------+------+----------+----------+----------+
-| RSV | FRAG | ATYP | DST.ADDR | DST.PORT |   DATA   |
-+-----+------+------+----------+----------+----------+
-|  2  |  1   |  1   | Variable |    2     | Variable |
-+-----+------+------+----------+----------+----------+
-*/
+// SOCKS5 UDP Datagram Format:
+// https://datatracker.ietf.org/doc/html/rfc1928#section-7
 func NewDatagram(ctx context.Context, memCreater MemAllocation, aTyp byte, dstAddr, dstPort, data []byte) *Datagram {
 	// Prepend the length of the domain name if it's a domain name (ATyp == 0x03)
 	if aTyp == fqdnAddress {
